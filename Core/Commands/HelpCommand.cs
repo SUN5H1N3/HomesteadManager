@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Spectre.Console;
 
 namespace Core.Commands;
 
@@ -7,10 +8,14 @@ public class HelpCommand(IServiceProvider provider) : ICommand {
     public string Description => "List available commands";
 
     public void Execute(string[] args) {
-        var commands = provider.GetServices<ICommand>().OrderBy(c => c.Name).ToList();
-        var width = commands.Max(c => c.Name.Length);
-        Console.WriteLine("Available commands:");
-        foreach (var command in commands)
-            Console.WriteLine($"  {command.Name.PadRight(width)}  {command.Description}");
+        var table = new Table();
+        table.AddColumn("Command");
+        table.AddColumn("Description");
+        table.Border(TableBorder.Rounded);
+
+        foreach (var command in provider.GetServices<ICommand>().OrderBy(c => c.Name))
+            table.AddRow(command.Name, command.Description);
+
+        AnsiConsole.Write(table);
     }
 }
