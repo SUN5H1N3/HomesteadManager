@@ -25,8 +25,12 @@ public class PlayerStatsService(IConfiguration config, ILogger<PlayerStatsServic
                 var used = json?["stats"]?["minecraft:used"]?.AsObject();
                 var itemsUsed = used?.Sum(kvp => kvp.Value?.GetValue<long>() ?? 0) ?? 0;
                 var movement = ExtractMovement(custom);
+
+                var damageDealt = Math.Round((custom?["minecraft:damage_dealt"]?.GetValue<long>() ?? 0) / 10.0, 1);
+                var damageTaken = Math.Round((custom?["minecraft:damage_taken"]?.GetValue<long>() ?? 0) / 10.0, 1);
+
                 var name = ResolveUsername(uuid, cache);
-                return new PlayerStats(name, hours, blocksMined, itemsUsed, movement);
+                return new PlayerStats(name, hours, blocksMined, itemsUsed, movement, damageDealt, damageTaken);
             })
             .ToList();
 

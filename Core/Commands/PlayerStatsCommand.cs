@@ -18,11 +18,15 @@ public class PlayerStatsCommand(IPlayerStatsService stats) : ICommand {
         var totalMined = players.Sum(p => p.BlocksMined);
         var totalUsed = players.Sum(p => p.ItemsUsed);
         var totalDistanceCm = players.Sum(p => p.MovementByType.Values.Sum());
+        var totalDamageDealt = players.Sum(p => p.DamageDealt);
+        var totalDamageTaken = players.Sum(p => p.DamageTaken);
 
         var (hoursMin, hoursMax) = MinMax(players, p => p.Hours);
         var (minedMin, minedMax) = MinMax(players, p => p.BlocksMined);
         var (usedMin, usedMax) = MinMax(players, p => p.ItemsUsed);
         var (distanceMin, distanceMax) = MinMax(players, p => p.MovementByType.Values.Sum());
+        var (dealtMin, dealtMax) = MinMax(players, p => p.DamageDealt);
+        var (takenMin, takenMax) = MinMax(players, p => p.DamageTaken);
 
         var typeTotals = detailed
             ? players
@@ -47,6 +51,8 @@ public class PlayerStatsCommand(IPlayerStatsService stats) : ICommand {
         table.AddColumn(new TableColumn("Hours").RightAligned());
         table.AddColumn(new TableColumn("Blocks Mined").RightAligned());
         table.AddColumn(new TableColumn("Items Used").RightAligned());
+        table.AddColumn(new TableColumn("Dmg Dealt").RightAligned());
+        table.AddColumn(new TableColumn("Dmg Taken").RightAligned());
         table.AddColumn(new TableColumn("Distance").RightAligned());
         foreach (var type in orderedTypes) {
             table.AddColumn(new TableColumn(ToHeader(type)).RightAligned());
@@ -59,6 +65,8 @@ public class PlayerStatsCommand(IPlayerStatsService stats) : ICommand {
                 Highlight(FormatHoursShare(p.Hours, totalHours), IsTop(p.Hours, hoursMin, hoursMax, ascending)),
                 Highlight(FormatShare(p.BlocksMined, totalMined), IsTop(p.BlocksMined, minedMin, minedMax, ascending)),
                 Highlight(FormatShare(p.ItemsUsed, totalUsed), IsTop(p.ItemsUsed, usedMin, usedMax, ascending)),
+                Highlight(FormatShare(p.DamageDealt, totalDamageDealt), IsTop(p.DamageDealt, dealtMin, dealtMax, ascending)),
+                Highlight(FormatShare(p.DamageTaken, totalDamageTaken), IsTop(p.DamageTaken, takenMin, takenMax, ascending)),
                 Highlight(FormatKm(distanceCm, totalDistanceCm), IsTop(distanceCm, distanceMin, distanceMax, ascending))
             };
 
@@ -77,6 +85,8 @@ public class PlayerStatsCommand(IPlayerStatsService stats) : ICommand {
             $"[bold]{Math.Round(totalHours, 2).ToString(CultureInfo.InvariantCulture)}[/]",
             $"[bold]{totalMined.ToString("N0", CultureInfo.InvariantCulture)}[/]",
             $"[bold]{totalUsed.ToString("N0", CultureInfo.InvariantCulture)}[/]",
+            $"[bold]{totalDamageDealt.ToString("F1", CultureInfo.InvariantCulture)}[/]",
+            $"[bold]{totalDamageTaken.ToString("F1", CultureInfo.InvariantCulture)}[/]",
             $"[bold]{(totalDistanceCm / 100_000.0).ToString("F2", CultureInfo.InvariantCulture)} km[/]"
         };
         foreach (var type in orderedTypes) {
@@ -95,6 +105,11 @@ public class PlayerStatsCommand(IPlayerStatsService stats) : ICommand {
     private static string FormatShare(long value, long total) {
         var share = total > 0 ? (double)value / total * 100 : 0;
         return $"{value.ToString("N0", CultureInfo.InvariantCulture)} ({share.ToString("F1", CultureInfo.InvariantCulture)}%)";
+    }
+    
+    private static string FormatShare(double value, double total) {
+        var share = total > 0 ? value / total * 100 : 0;
+        return $"{value.ToString(CultureInfo.InvariantCulture)} ({share.ToString("F1", CultureInfo.InvariantCulture)}%)";
     }
 
     private static string FormatKm(long cm, long totalCm) {

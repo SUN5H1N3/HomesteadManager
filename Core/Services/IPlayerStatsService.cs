@@ -5,7 +5,9 @@ public record PlayerStats(
     double Hours,
     long BlocksMined,
     long ItemsUsed,
-    IReadOnlyDictionary<string, long> MovementByType
+    IReadOnlyDictionary<string, long> MovementByType,
+    double DamageDealt,
+    double DamageTaken
 );
 
 public interface IPlayerStatsService {
