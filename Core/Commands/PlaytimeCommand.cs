@@ -32,14 +32,29 @@ public class PlaytimeCommand(IConfiguration config, ILogger<PlaytimeCommand> log
 
         SaveCache(cache);
 
+        var total = players.Sum(p => p.Hours);
+
         var table = new Table();
         table.AddColumn("Player");
         table.AddColumn(new TableColumn("Hours").RightAligned());
+        table.AddColumn(new TableColumn("Share").RightAligned());
         table.Border(TableBorder.Rounded);
 
         foreach (var p in players) {
-            table.AddRow(p.Player, p.Hours.ToString(CultureInfo.InvariantCulture));
+            var share = total > 0 ? p.Hours / total * 100 : 0;
+            table.AddRow(
+                p.Player,
+                p.Hours.ToString(CultureInfo.InvariantCulture),
+                $"{share.ToString("F1", CultureInfo.InvariantCulture)}%"
+            );
         }
+
+        table.AddEmptyRow();
+        table.AddRow(
+            "[bold]Total[/]",
+            $"[bold]{Math.Round(total, 2).ToString(CultureInfo.InvariantCulture)}[/]",
+            "[bold]100.0%[/]"
+        );
 
         AnsiConsole.Write(table);
     }
