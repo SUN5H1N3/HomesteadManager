@@ -17,14 +17,16 @@ public class PlayerStatsService(IConfiguration config, ILogger<PlayerStatsServic
             .Select(file => {
                 var uuid = Path.GetFileNameWithoutExtension(file).Replace("-", "");
                 var json = JsonNode.Parse(File.ReadAllText(file));
-                var ticks = json?["stats"]?["minecraft:custom"]?["minecraft:play_time"]?.GetValue<long>() ?? 0;
+                var custom = json?["stats"]?["minecraft:custom"]?.AsObject();
+                var ticks = custom?["minecraft:play_time"]?.GetValue<long>() ?? 0;
                 var hours = Math.Round(ticks / 20.0 / 3600.0, 2);
                 var mined = json?["stats"]?["minecraft:mined"]?.AsObject();
                 var blocksMined = mined?.Sum(kvp => kvp.Value?.GetValue<long>() ?? 0) ?? 0;
                 var used = json?["stats"]?["minecraft:used"]?.AsObject();
                 var itemsUsed = used?.Sum(kvp => kvp.Value?.GetValue<long>() ?? 0) ?? 0;
+                var movement = ExtractMovement(custom);
                 var name = ResolveUsername(uuid, cache);
-                return new PlayerStats(name, hours, blocksMined, itemsUsed);
+                return new PlayerStats(name, hours, blocksMined, itemsUsed, movement);
             })
             .OrderByDescending(p => p.Hours)
             .ToList();
@@ -32,6 +34,22 @@ public class PlayerStatsService(IConfiguration config, ILogger<PlayerStatsServic
         SaveCache(cache);
 
         return players;
+    }
+
+    private static IReadOnlyDictionary<string, long> ExtractMovement(JsonObject? custom) {
+        var result = new Dictionary<string, long>();
+        if (custom == null) return result;
+
+        const string prefix = "minecraft:";
+        const string suffix = "_one_cm";
+
+        foreach (var kvp in custom) {
+            if (!kvp.Key.StartsWith(prefix) || !kvp.Key.EndsWith(suffix)) continue;
+            var type = kvp.Key[prefix.Length..^suffix.Length];
+            result[type] = kvp.Value?.GetValue<long>() ?? 0;
+        }
+
+        return result;
     }
 
     private string ResolveUsername(string uuid, List<CacheEntry> cache) {

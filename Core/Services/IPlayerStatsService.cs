@@ -1,6 +1,12 @@
 namespace Core.Services;
 
-public record PlayerStats(string Player, double Hours, long BlocksMined, long ItemsUsed);
+public record PlayerStats(
+    string Player,
+    double Hours,
+    long BlocksMined,
+    long ItemsUsed,
+    IReadOnlyDictionary<string, long> MovementByType
+);
 
 public interface IPlayerStatsService {
     IReadOnlyList<PlayerStats> Collect();
