@@ -10,6 +10,7 @@ namespace Core.Commands;
 
 public class PlaytimeCommand(IConfiguration config, ILogger<PlaytimeCommand> logger) : ICommand {
     public string Name => "playtime";
+    public string Description => "Show total playtime per player";
 
     private readonly string _statsPath = config["StatsPath"]!;
     private readonly string _cachePath = config["PlayerUuidsPath"]!;

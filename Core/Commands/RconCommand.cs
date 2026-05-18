@@ -4,6 +4,7 @@ namespace Core.Commands;
 
 public class RconCommand(IRconService rcon) : ICommand {
     public string Name => "rcon";
+    public string Description => "Send RCON commands or enter interactive RCON mode";
 
     public void Execute(string[] args) {
         if (args.Length > 0) {

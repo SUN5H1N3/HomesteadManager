@@ -14,6 +14,7 @@ public class RestartCommand(
     IShutdownService shutdown
 ) : ICommand {
     public string Name => "restart";
+    public string Description => "Warn players, stop the server, back up, and start it again";
 
     public void Execute(string[] args) {    
         var defaultMinutes = int.Parse(config["Restart:WarningMinutes"] ?? "10");

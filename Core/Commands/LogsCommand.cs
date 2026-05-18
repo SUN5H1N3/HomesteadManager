@@ -4,6 +4,7 @@ namespace Core.Commands;
 
 public class LogsCommand(ILogsService logs) : ICommand {
     public string Name => "logs";
+    public string Description => "Show server logs (-f to follow, -n<N> to set line count)";
 
     public void Execute(string[] args) {
         var follow = args.Contains("-f");
