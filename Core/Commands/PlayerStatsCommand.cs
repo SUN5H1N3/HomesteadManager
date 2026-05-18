@@ -11,12 +11,18 @@ public class PlayerStatsCommand(IPlayerStatsService stats) : ICommand {
     public void Execute(string[] args) {
         var rawPlayers = stats.Collect();
         var detailed = args.Contains("--detailed-distance");
+        var ascending = args.Contains("--sort-asc");
         var players = SortPlayers(rawPlayers, args);
 
         var totalHours = players.Sum(p => p.Hours);
         var totalMined = players.Sum(p => p.BlocksMined);
         var totalUsed = players.Sum(p => p.ItemsUsed);
         var totalDistanceCm = players.Sum(p => p.MovementByType.Values.Sum());
+
+        var (hoursMin, hoursMax) = MinMax(players, p => p.Hours);
+        var (minedMin, minedMax) = MinMax(players, p => p.BlocksMined);
+        var (usedMin, usedMax) = MinMax(players, p => p.ItemsUsed);
+        var (distanceMin, distanceMax) = MinMax(players, p => p.MovementByType.Values.Sum());
 
         var typeTotals = detailed
             ? players
@@ -29,6 +35,11 @@ public class PlayerStatsCommand(IPlayerStatsService stats) : ICommand {
             .OrderByDescending(kvp => kvp.Value)
             .Select(kvp => kvp.Key)
             .ToList();
+
+        var minMaxByType = orderedTypes.ToDictionary(
+            t => t,
+            t => MinMax(players, p => p.MovementByType.TryGetValue(t, out var v) ? v : 0L)
+        );
 
         var table = new Table();
         table.Border(TableBorder.Rounded);
@@ -45,15 +56,16 @@ public class PlayerStatsCommand(IPlayerStatsService stats) : ICommand {
             var distanceCm = p.MovementByType.Values.Sum();
             var row = new List<string> {
                 p.Player,
-                FormatHoursShare(p.Hours, totalHours),
-                FormatShare(p.BlocksMined, totalMined),
-                FormatShare(p.ItemsUsed, totalUsed),
-                FormatKm(distanceCm, totalDistanceCm)
+                Highlight(FormatHoursShare(p.Hours, totalHours), IsTop(p.Hours, hoursMin, hoursMax, ascending)),
+                Highlight(FormatShare(p.BlocksMined, totalMined), IsTop(p.BlocksMined, minedMin, minedMax, ascending)),
+                Highlight(FormatShare(p.ItemsUsed, totalUsed), IsTop(p.ItemsUsed, usedMin, usedMax, ascending)),
+                Highlight(FormatKm(distanceCm, totalDistanceCm), IsTop(distanceCm, distanceMin, distanceMax, ascending))
             };
 
             foreach (var type in orderedTypes) {
                 var cm = p.MovementByType.TryGetValue(type, out var v) ? v : 0;
-                row.Add(FormatKm(cm, typeTotals[type]));
+                var (minT, maxT) = minMaxByType[type];
+                row.Add(Highlight(FormatKm(cm, typeTotals[type]), IsTop(cm, minT, maxT, ascending)));
             }
 
             table.AddRow(row.ToArray());
@@ -93,6 +105,21 @@ public class PlayerStatsCommand(IPlayerStatsService stats) : ICommand {
 
     private static string ToHeader(string snake) =>
         string.Join(" ", snake.Split('_').Select(s => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..]));
+
+    private static string Highlight(string cell, bool isTop) =>
+        isTop ? $"[green]{cell}[/]" : cell;
+
+    private static (double Min, double Max) MinMax<T>(IReadOnlyList<T> items, Func<T, double> selector) =>
+        items.Count == 0 ? (0, 0) : (items.Min(selector), items.Max(selector));
+
+    private static (long Min, long Max) MinMax<T>(IReadOnlyList<T> items, Func<T, long> selector) =>
+        items.Count == 0 ? (0, 0) : (items.Min(selector), items.Max(selector));
+
+    private static bool IsTop(double value, double min, double max, bool ascending) =>
+        max > min && value == (ascending ? min : max);
+
+    private static bool IsTop(long value, long min, long max, bool ascending) =>
+        max > min && value == (ascending ? min : max);
 
     private static IReadOnlyList<PlayerStats> SortPlayers(IReadOnlyList<PlayerStats> players, string[] args) {
         var column = (args
