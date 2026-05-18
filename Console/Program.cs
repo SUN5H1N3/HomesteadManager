@@ -34,12 +34,13 @@ var services = new ServiceCollection()
     .AddSingleton<ICommand, RconCommand>()
     .AddSingleton<ICommand, LogsCommand>()
     .AddSingleton<ICommand, HelpCommand>()
+    .AddSingleton<ICommand, PlaytimeCommand>() 
     .BuildServiceProvider();
 
 if (args.Length == 0) {
     Console.WriteLine("Homestead Manager. Type 'help' to list commands, 'exit' to quit.");
     while (true) {
-        Console.Write("> ");
+        Console.Write("hm > ");
         var input = Console.ReadLine();
         if (string.IsNullOrWhiteSpace(input)) continue;
         if (input == "exit") break;

@@ -11,7 +11,7 @@ public class RconCommand(IRconService rcon) : ICommand {
         } else {
             Console.WriteLine("Connected to RCON. Type 'exit' to quit.");
             while (true) {
-                Console.Write("> ");
+                Console.Write("rcon > ");
                 var input = Console.ReadLine();
                 if (string.IsNullOrWhiteSpace(input) || input == "exit")
                     break;
@@ -19,4 +19,4 @@ public class RconCommand(IRconService rcon) : ICommand {
             }
         }
     }
-}
+}  

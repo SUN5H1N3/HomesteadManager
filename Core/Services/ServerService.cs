@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 namespace Core.Services;
 
 public class ServerService(IRconService rcon, INssmService nssm, IConfiguration config, ILogger<ServerService> logger) : IServerService {
-    private readonly string _serviceName = config["Server:ServiceName"] ?? "Minecraft";
+    private readonly string _serviceName = config["Server:ServiceName"]!;
 
     public void Start() {
         logger.LogInformation("Starting server");

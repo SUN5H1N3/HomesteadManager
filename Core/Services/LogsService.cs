@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 namespace Core.Services;
 
 public class LogsService(IConfiguration config, ILogger<LogsService> logger) : ILogsService {
-    private readonly string _logPath = config["Logs:Path"] ?? throw new Exception("Logs path is required");
+    private readonly string _logPath = config["Logs:Path"]!;
 
     public void Tail(int lines) {
         if (!File.Exists(_logPath)) {
