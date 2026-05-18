@@ -9,8 +9,9 @@ public class PlayerStatsCommand(IPlayerStatsService stats) : ICommand {
     public string Description => "Show player statistics";
 
     public void Execute(string[] args) {
-        var players = stats.Collect();
+        var rawPlayers = stats.Collect();
         var detailed = args.Contains("--detailed-distance");
+        var players = SortPlayers(rawPlayers, args);
 
         var totalHours = players.Sum(p => p.Hours);
         var totalMined = players.Sum(p => p.BlocksMined);
@@ -92,4 +93,25 @@ public class PlayerStatsCommand(IPlayerStatsService stats) : ICommand {
 
     private static string ToHeader(string snake) =>
         string.Join(" ", snake.Split('_').Select(s => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..]));
+
+    private static IReadOnlyList<PlayerStats> SortPlayers(IReadOnlyList<PlayerStats> players, string[] args) {
+        var column = (args
+            .Where(a => a.StartsWith("--sort="))
+            .Select(a => a["--sort=".Length..])
+            .FirstOrDefault() ?? "hours").ToLowerInvariant();
+        var asc = args.Contains("--sort-asc");
+
+        Func<PlayerStats, IComparable> key = column switch {
+            "player" => p => p.Player,
+            "hours" => p => p.Hours,
+            "mined" or "blocks-mined" => p => p.BlocksMined,
+            "used" or "items-used" => p => p.ItemsUsed,
+            "distance" => p => p.MovementByType.Values.Sum(),
+            _ => p => p.MovementByType.TryGetValue(column.Replace('-', '_'), out var v) ? v : 0L
+        };
+
+        return asc
+            ? players.OrderBy(key).ToList()
+            : players.OrderByDescending(key).ToList();
+    }
 }

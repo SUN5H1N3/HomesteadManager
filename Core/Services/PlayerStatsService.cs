@@ -28,7 +28,6 @@ public class PlayerStatsService(IConfiguration config, ILogger<PlayerStatsServic
                 var name = ResolveUsername(uuid, cache);
                 return new PlayerStats(name, hours, blocksMined, itemsUsed, movement);
             })
-            .OrderByDescending(p => p.Hours)
             .ToList();
 
         SaveCache(cache);
