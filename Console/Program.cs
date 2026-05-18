@@ -34,7 +34,7 @@ var services = new ServiceCollection()
     .AddSingleton<ICommand, RconCommand>()
     .AddSingleton<ICommand, LogsCommand>()
     .AddSingleton<ICommand, HelpCommand>()
-    .AddSingleton<ICommand, PlaytimeCommand>() 
+    .AddSingleton<ICommand, PlayerStatsCommand>()
     .BuildServiceProvider();
 
 if (args.Length == 0) {
