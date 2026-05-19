@@ -1,13 +1,12 @@
 using Core.Services;
+using Spectre.Console.Cli;
 
 namespace Core.Commands;
 
-public class BackupCommand(IBackupService backup) : ICommand {
-    public string Name => "backup";
-    public string Description => "Create a backup and clean up old backups";
-
-    public void Execute(string[] args) {
+public sealed class BackupCommand(IBackupService backup) : Command {
+    protected override int Execute(CommandContext context, CancellationToken cancellation) {
         backup.CreateBackup();
         backup.CleanupBackups();
+        return 0;
     }
 }

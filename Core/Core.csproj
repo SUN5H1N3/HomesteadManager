@@ -10,7 +10,8 @@
       <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="11.0.0-preview.4.26230.115" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="11.0.0-preview.4.26230.115" />
       <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="11.0.0-preview.4.26230.115" />
-      <PackageReference Include="Spectre.Console" Version="0.55.3-alpha.0.17" />
+      <PackageReference Include="Spectre.Console" Version="0.55.0" />
+      <PackageReference Include="Spectre.Console.Cli" Version="0.55.0" />
     </ItemGroup>
 
 </Project>
