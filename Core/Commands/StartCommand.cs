@@ -1,15 +1,22 @@
+using System.ComponentModel;
 using Core.Services;
+using Spectre.Console.Cli;
 
 namespace Core.Commands;
 
-public class StartCommand(IServerService server, ILogsService logs) : ICommand {
-    public string Name => "start";
-    public string Description => "Start the server and follow logs unless -silent is passed";
+public sealed class StartCommand(IServerService server, ILogsService logs)
+    : Command<StartCommand.Settings> {
+    public sealed class Settings : CommandSettings {
+        [CommandOption("--silent")]
+        [Description("Do not follow logs after starting")]
+        public bool Silent { get; init; }
+    }
 
-    public void Execute(string[] args) {
+    protected override int Execute(CommandContext context, Settings settings, CancellationToken cancellation) {
         server.Start();
-        if (!args.Contains("-silent")) {
+        if (!settings.Silent) {
             logs.Follow();
         }
+        return 0;
     }
 }

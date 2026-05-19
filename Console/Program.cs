@@ -1,8 +1,11 @@
-﻿using Core.Commands;
+using System.Globalization;
+using Core.Cli;
+using Core.Commands;
 using Core.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
+using Spectre.Console.Cli;
 
 var config = new ConfigurationBuilder()
     .AddJsonFile(AppContext.BaseDirectory + "/appsettings.json")
@@ -25,20 +28,30 @@ var services = new ServiceCollection()
     .AddSingleton<IServerService, ServerService>()
     .AddSingleton<INssmService, NssmService>()
     .AddSingleton<ILogsService, LogsService>()
-    .AddSingleton<ICommandService, CommandService>()
     .AddSingleton<IShutdownService, ShutdownService>()
     .AddSingleton<IPlayerStatsService, PlayerStatsService>()
     .AddSingleton<IRestartService, RestartService>()
-    .AddSingleton<ISleeper, Sleeper>()
-    .AddSingleton<ICommand, RestartCommand>()
-    .AddSingleton<ICommand, StartCommand>()
-    .AddSingleton<ICommand, StopCommand>()
-    .AddSingleton<ICommand, BackupCommand>()
-    .AddSingleton<ICommand, RconCommand>()
-    .AddSingleton<ICommand, LogsCommand>()
-    .AddSingleton<ICommand, HelpCommand>()
-    .AddSingleton<ICommand, PlayerStatsCommand>()
-    .BuildServiceProvider();
+    .AddSingleton<ISleeper, Sleeper>();
+
+var app = new CommandApp(new TypeRegistrar(services));
+app.Configure(c => {
+    c.SetApplicationName("hm");
+    c.AddCommand<RestartCommand>("restart")
+        .WithDescription("Warn players, stop the server, back up, and start it again");
+    c.AddCommand<StartCommand>("start")
+        .WithDescription("Start the server and follow logs unless --silent is passed");
+    c.AddCommand<StopCommand>("stop")
+        .WithDescription("Stop the server");
+    c.AddCommand<BackupCommand>("backup")
+        .WithDescription("Create a backup and clean up old backups");
+    c.AddCommand<RconCommand>("rcon")
+        .WithDescription("Send RCON commands or enter interactive RCON mode");
+    c.AddCommand<LogsCommand>("logs")
+        .WithDescription("Show server logs (-f to follow, -n to set line count)");
+    c.AddCommand<PlayerStatsCommand>("player-stats")
+        .WithDescription("Show player statistics");
+    c.SetApplicationCulture(CultureInfo.InvariantCulture);
+});
 
 if (args.Length == 0) {
     Console.WriteLine("Homestead Manager. Type 'help' to list commands, 'exit' to quit.");
@@ -49,8 +62,10 @@ if (args.Length == 0) {
         if (input == "exit") break;
 
         var parts = input.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        services.GetRequiredService<ICommandService>().Execute(parts);
+        if (parts is ["help"]) parts = ["--help"];
+        app.Run(parts);
     }
-} else {
-    services.GetRequiredService<ICommandService>().Execute(args);
+    return 0;
 }
+
+return app.Run(args);

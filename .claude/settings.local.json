@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet package *)",
+      "Bash(\"/c/Program Files/dotnet/dotnet.exe\" package search Spectre.Console.Cli --exact-match --prerelease)",
+      "Bash(\"/c/Program Files/dotnet/dotnet.exe\" package search Spectre.Console --exact-match)",
+      "Bash(\"/c/Program Files/dotnet/dotnet.exe\" package search Spectre.Console.Testing --exact-match)",
+      "Bash(\"/c/Program Files/dotnet/dotnet.exe\" restore)",
+      "Bash(\"/c/Program Files/dotnet/dotnet.exe\" --list-sdks)",
+      "Read(//c/Users/alter/AppData/Local/Microsoft/**)",
+      "Read(//c/Users/alter/.dotnet//**)",
+      "Bash(/c/Users/alter/.dotnet/dotnet.exe --list-sdks)",
+      "Bash(/c/Users/alter/.dotnet/dotnet.exe restore *)",
+      "Bash(/c/Users/alter/.dotnet/dotnet.exe build *)",
+      "Bash(/c/Users/alter/.dotnet/dotnet.exe test *)",
+      "Bash(/c/Users/alter/.dotnet/dotnet.exe package *)",
+      "Bash(find /c/Users/alter/.nuget/packages/spectre.console.cli.testing -name \"*.dll\" 2>&1 | head -5)",
+      "Bash(powershell -Command '[Reflection.Assembly]::LoadFile\\('\\\\''C:\\\\Users\\\\alter\\\\.nuget\\\\packages\\\\spectre.console.cli.testing\\\\0.55.0\\\\lib\\\\net9.0\\\\Spectre.Console.Cli.Testing.dll'\\\\''\\).GetExportedTypes\\(\\) | ForEach-Object { $_.FullName }')",
+      "WebSearch"
+    ]
+  }
+}

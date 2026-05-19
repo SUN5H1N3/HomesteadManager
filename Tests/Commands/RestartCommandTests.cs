@@ -1,6 +1,10 @@
+using Core.Cli;
 using Core.Commands;
 using Core.Services;
+using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
+using Spectre.Console.Cli;
+using Spectre.Console.Cli.Testing;
 using Xunit;
 
 namespace Tests.Commands;
@@ -9,13 +13,21 @@ public class RestartCommandTests {
     private readonly IRestartService _restart = Substitute.For<IRestartService>();
     private readonly ILogsService _logs = Substitute.For<ILogsService>();
 
-    private RestartCommand BuildCommand() => new(_restart, _logs);
+    private CommandAppTester BuildApp() {
+        var services = new ServiceCollection()
+            .AddSingleton(_restart)
+            .AddSingleton(_logs);
+
+        var app = new CommandAppTester(new TypeRegistrar(services));
+        app.SetDefaultCommand<RestartCommand>();
+        return app;
+    }
 
     [Fact]
     public void Execute_WithNoArgs_PassesNullMinutes() {
         _restart.Restart(Arg.Any<int?>()).Returns(RestartOutcome.Restarted);
 
-        BuildCommand().Execute([]);
+        BuildApp().Run();
 
         _restart.Received(1).Restart(null);
     }
@@ -24,25 +36,16 @@ public class RestartCommandTests {
     public void Execute_WithNumericFirstArg_PassesParsedMinutes() {
         _restart.Restart(Arg.Any<int?>()).Returns(RestartOutcome.Restarted);
 
-        BuildCommand().Execute(["7"]);
+        BuildApp().Run("7");
 
         _restart.Received(1).Restart(7);
-    }
-
-    [Fact]
-    public void Execute_WithNonNumericFirstArg_PassesNullMinutes() {
-        _restart.Restart(Arg.Any<int?>()).Returns(RestartOutcome.Restarted);
-
-        BuildCommand().Execute(["soon"]);
-
-        _restart.Received(1).Restart(null);
     }
 
     [Fact]
     public void Execute_WhenRestarted_FollowsLogs() {
         _restart.Restart(Arg.Any<int?>()).Returns(RestartOutcome.Restarted);
 
-        BuildCommand().Execute([]);
+        BuildApp().Run();
 
         _logs.Received(1).Follow();
     }
@@ -51,7 +54,7 @@ public class RestartCommandTests {
     public void Execute_WhenRestartedWithWithoutServerLogsFlag_DoesNotFollow() {
         _restart.Restart(Arg.Any<int?>()).Returns(RestartOutcome.Restarted);
 
-        BuildCommand().Execute(["--without-server-logs"]);
+        BuildApp().Run("--without-server-logs");
 
         _logs.DidNotReceive().Follow();
     }
@@ -60,7 +63,7 @@ public class RestartCommandTests {
     public void Execute_WhenRebooting_DoesNotFollowLogs() {
         _restart.Restart(Arg.Any<int?>()).Returns(RestartOutcome.Rebooting);
 
-        BuildCommand().Execute([]);
+        BuildApp().Run();
 
         _logs.DidNotReceive().Follow();
     }

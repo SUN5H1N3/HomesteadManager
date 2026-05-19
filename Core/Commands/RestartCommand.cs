@@ -1,20 +1,28 @@
+using System.ComponentModel;
 using Core.Services;
+using Spectre.Console.Cli;
 
 namespace Core.Commands;
 
-public class RestartCommand(IRestartService restart, ILogsService logs) : ICommand {
-    public string Name => "restart";
-    public string Description => "Warn players, stop the server, back up, and start it again";
+public sealed class RestartCommand(IRestartService restart, ILogsService logs)
+    : Command<RestartCommand.Settings> {
+    public sealed class Settings : CommandSettings {
+        [CommandArgument(0, "[minutes]")]
+        [Description("Minutes to warn players before restart (default: none)")]
+        public int? WarningMinutes { get; init; }
 
-    public void Execute(string[] args) {
-        int? warningMinutes = args.Length > 0 && int.TryParse(args[0], out var parsed)
-            ? parsed
-            : null;
+        [CommandOption("--without-server-logs")]
+        [Description("Do not follow server logs after restart")]
+        public bool WithoutServerLogs { get; init; }
+    }
 
-        var outcome = restart.Restart(warningMinutes);
+    protected override int Execute(CommandContext context, Settings settings, CancellationToken cancellation) {
+        var outcome = restart.Restart(settings.WarningMinutes);
 
-        if (outcome == RestartOutcome.Restarted && !args.Contains("--without-server-logs")) {
+        if (outcome == RestartOutcome.Restarted && !settings.WithoutServerLogs) {
             logs.Follow();
         }
+
+        return 0;
     }
 }

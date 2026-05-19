@@ -1,18 +1,33 @@
+using System.ComponentModel;
 using System.Globalization;
 using Core.Services;
 using Spectre.Console;
+using Spectre.Console.Cli;
 
 namespace Core.Commands;
 
-public class PlayerStatsCommand(IPlayerStatsService stats) : ICommand {
-    public string Name => "player-stats";
-    public string Description => "Show player statistics";
+public sealed class PlayerStatsCommand(IPlayerStatsService stats)
+    : Command<PlayerStatsCommand.Settings> {
+    public sealed class Settings : CommandSettings {
+        [CommandOption("-d|--detailed-distance")]
+        [Description("Break distance down by movement type")]
+        public bool DetailedDistance { get; init; }
 
-    public void Execute(string[] args) {
+        [CommandOption("--sort-asc")]
+        [Description("Sort ascending instead of descending")]
+        public bool SortAscending { get; init; }
+
+        [CommandOption("--sort=<COLUMN>")]
+        [Description("Sort column: player, hours, mined, used, distance, or a movement type")]
+        [DefaultValue("hours")]
+        public string Sort { get; init; } = "hours";
+    }
+
+    protected override int Execute(CommandContext context, Settings settings, CancellationToken cancellation) {
         var rawPlayers = stats.Collect();
-        var detailed = args.Contains("--detailed-distance");
-        var ascending = args.Contains("--sort-asc");
-        var players = SortPlayers(rawPlayers, args);
+        var players = SortPlayers(rawPlayers, settings);
+        var ascending = settings.SortAscending;
+        var detailed = settings.DetailedDistance;
 
         var totalHours = players.Sum(p => p.Hours);
         var totalMined = players.Sum(p => p.BlocksMined);
@@ -95,6 +110,7 @@ public class PlayerStatsCommand(IPlayerStatsService stats) : ICommand {
         table.AddRow(totalRow.ToArray());
 
         AnsiConsole.Write(table);
+        return 0;
     }
 
     private static string FormatHoursShare(double hours, double total) {
@@ -106,7 +122,7 @@ public class PlayerStatsCommand(IPlayerStatsService stats) : ICommand {
         var share = total > 0 ? (double)value / total * 100 : 0;
         return $"{value.ToString("N0", CultureInfo.InvariantCulture)} ({share.ToString("F1", CultureInfo.InvariantCulture)}%)";
     }
-    
+
     private static string FormatShare(double value, double total) {
         var share = total > 0 ? value / total * 100 : 0;
         return $"{value.ToString(CultureInfo.InvariantCulture)} ({share.ToString("F1", CultureInfo.InvariantCulture)}%)";
@@ -136,12 +152,8 @@ public class PlayerStatsCommand(IPlayerStatsService stats) : ICommand {
     private static bool IsTop(long value, long min, long max, bool ascending) =>
         max > min && value == (ascending ? min : max);
 
-    private static IReadOnlyList<PlayerStats> SortPlayers(IReadOnlyList<PlayerStats> players, string[] args) {
-        var column = (args
-            .Where(a => a.StartsWith("--sort="))
-            .Select(a => a["--sort=".Length..])
-            .FirstOrDefault() ?? "hours").ToLowerInvariant();
-        var asc = args.Contains("--sort-asc");
+    private static IReadOnlyList<PlayerStats> SortPlayers(IReadOnlyList<PlayerStats> players, Settings settings) {
+        var column = settings.Sort.ToLowerInvariant();
 
         Func<PlayerStats, IComparable> key = column switch {
             "player" => p => p.Player,
@@ -152,7 +164,7 @@ public class PlayerStatsCommand(IPlayerStatsService stats) : ICommand {
             _ => p => p.MovementByType.TryGetValue(column.Replace('-', '_'), out var v) ? v : 0L
         };
 
-        return asc
+        return settings.SortAscending
             ? players.OrderBy(key).ToList()
             : players.OrderByDescending(key).ToList();
     }

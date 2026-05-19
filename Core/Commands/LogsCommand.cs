@@ -1,24 +1,26 @@
+using System.ComponentModel;
 using Core.Services;
+using Spectre.Console.Cli;
 
 namespace Core.Commands;
 
-public class LogsCommand(ILogsService logs) : ICommand {
-    public string Name => "logs";
-    public string Description => "Show server logs (-f to follow, -n<N> to set line count)";
+public sealed class LogsCommand(ILogsService logs) : Command<LogsCommand.Settings> {
+    public sealed class Settings : CommandSettings {
+        [CommandOption("-f|--follow")]
+        [Description("Follow the log instead of printing the tail")]
+        public bool Follow { get; init; }
 
-    public void Execute(string[] args) {
-        var follow = args.Contains("-f");
-        var lines = 50;
+        [CommandOption("-n|--lines=<COUNT>")]
+        [Description("Number of trailing lines to print")]
+        [DefaultValue(50)]
+        public int Lines { get; init; }
+    }
 
-        var linesArg = args.FirstOrDefault(a => a.StartsWith("-n"));
-        if (linesArg != null) {
-            int.TryParse(linesArg.Replace("-n", ""), out lines);
-        }
-
-        if (follow) {
+    protected override int Execute(CommandContext context, Settings settings, CancellationToken cancellation) {
+        logs.Tail(settings.Lines);
+        if (settings.Follow) {
             logs.Follow();
-        } else {
-            logs.Tail(lines);
-        }
+        } 
+        return 0;
     }
 }
